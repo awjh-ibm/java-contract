@@ -43,8 +43,4 @@ public class ProductDetails {
     public int getUnitPrice() {
         return this.unitPrice;
     }
-
-    public String serialize() {
-        return new JSONObject(this).toString();
-    }
 }

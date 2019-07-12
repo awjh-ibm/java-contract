@@ -3,34 +3,11 @@
  */
 package org.locnet;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.cert.X509Extension;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-
-import org.bouncycastle.asn1.ASN1Encoding;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1String;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERUTF8String;
-import org.bouncycastle.asn1.util.ASN1Dump;
+import org.awjh.Organization;
+import org.awjh.Participant;
 import org.hyperledger.fabric.contract.annotation.Contract;
 import org.hyperledger.fabric.contract.annotation.Default;
 import org.hyperledger.fabric.contract.annotation.Transaction;
-import org.hyperledger.fabric.protos.msp.Identities.SerializedIdentity;
-import org.hyperledger.fabric.shim.ChaincodeStub;
-import org.json.JSONObject;
 import org.locnet.assets.Approval;
 import org.locnet.assets.Evidence;
 import org.locnet.assets.LetterOfCredit;
@@ -58,7 +35,10 @@ public class LettersOfCreditContract extends BaseContract {
 
     @Transaction()
     public String helloWorld(LetterOfCreditContext ctx) {
-        return ctx.getClientIdentity().getAttributeValue("someAttr");
+        final Participant participant = ctx.getClientIdentity().getParticipant();
+        final Organization organization = ctx.getClientIdentity().getOrganization();
+
+        return "HELLO " + participant.getId() + " FROM " + organization.getName();
     }
 
     @Transaction()
