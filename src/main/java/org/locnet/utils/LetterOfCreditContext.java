@@ -2,15 +2,9 @@ package org.locnet.utils;
 
 import java.io.UnsupportedEncodingException;
 import java.security.cert.CertificateException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import org.awjh.Asset;
-import org.awjh.Organization;
-import org.awjh.Participant;
 import org.awjh.ledger_api.lists.AssetList;
 import org.awjh.ledger_api.lists.OrganizationList;
 import org.awjh.ledger_api.lists.ParticipantList;
@@ -27,22 +21,14 @@ public class LetterOfCreditContext extends Context {
     private AssetList letterOfCreditList;
     private LetterOfCreditClientIdentity clientIdentity;
 
+    @SuppressWarnings("unchecked")
     public LetterOfCreditContext(ChaincodeStub stub)
             throws InvalidProtocolBufferException, CertificateException, UnsupportedEncodingException {
         super(stub);
 
-        final Map<String, Function<String, Organization>> organizationDeserializers = new HashMap<String, Function<String, Organization>>();
-        organizationDeserializers.put("Bank", Bank::deserialize);
-
-        final Map<String, Function<String, Participant>> participantDeserializers = new HashMap<String, Function<String, Participant>>();
-        participantDeserializers.put("Task", Task::deserialize);
-
-        final Map<String, Function<String, Asset>> assetDeserializers = new HashMap<String, Function<String, Asset>>();
-        assetDeserializers.put("LetterOfCredit", LetterOfCredit::deserialize);
-
-        this.organizationList = new OrganizationList(this, "locnet.organizations", organizationDeserializers);
-        this.participantList = new ParticipantList(this, "locnet.participants", participantDeserializers);
-        this.letterOfCreditList = new AssetList(this, "locnet.assets", assetDeserializers);
+        this.organizationList = new OrganizationList(this, "locnet.organizations", new Class[] {Bank.class});
+        this.participantList = new ParticipantList(this, "locnet.participants", new Class[] {Task.class});
+        this.letterOfCreditList = new AssetList(this, "locnet.assets", new Class[] {LetterOfCredit.class});
 
         this.clientIdentity = new LetterOfCreditClientIdentity(this);
     }

@@ -1,9 +1,11 @@
 package org.awjh.ledger_api;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.hyperledger.fabric.contract.Context;
 import org.hyperledger.fabric.shim.ledger.KeyModification;
@@ -13,13 +15,17 @@ import org.json.JSONObject;
 
 public abstract class StateList<T extends State> {
     private String name;
-    private Map<String, Function<String, T>> supportedClasses;
+    private Map<String, Class<? extends T>> supportedClasses;
+    private Map<String, String[]> collectionsMap;
+    private ArrayList<String> collections;
     private Context ctx;
 
     public StateList(Context ctx, String listName) {
         this.ctx = ctx;
         this.name = listName;
-        this.supportedClasses = new HashMap<String, Function<String, T>>();
+        this.supportedClasses = new HashMap<String, Class<? extends T>>();
+        this.collectionsMap = new HashMap<String, String[]>();
+        this.collections = new ArrayList<String>();
     }
 
     public boolean exists(String key) {
@@ -38,41 +44,92 @@ public abstract class StateList<T extends State> {
             throw new RuntimeException("Cannot add state. State already exists for key " + stateKey);
         }
 
-        final byte[] data = state.serialize();
-
         final String key = this.ctx.getStub().createCompositeKey(this.name, state.getSplitKey()).toString();
 
-        this.ctx.getStub().putState(key, data);
+        final byte[] worldStateData = state.serialize().getBytes();
+
+        this.ctx.getStub().putState(key, worldStateData);
+
+        for (String collection : this.collectionsMap.get(state.getClass().getName())) {
+            final byte[] privateData = state.serialize(collection).getBytes();
+
+            try {
+                this.ctx.getStub().putPrivateData(collection, key, privateData);
+            } catch (Exception err) {
+                // can't access that store
+            }
+        }
     }
 
     public T get(String key) throws RuntimeException {
         final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, State.splitKey(key)).toString();
-        final String data = this.ctx.getStub().getState(ledgerKey).toString();
+        final String worldStateData = new String(this.ctx.getStub().getState(ledgerKey));
 
-        if (data.length() == 0) {
+        System.out.println("WORLD STATE DATA: " + worldStateData);
+
+        if (worldStateData.length() == 0) {
             throw new RuntimeException("Cannot get state. No state exists for key " + key);
         }
 
-        JSONObject json = new JSONObject(data);
-        Function<String, T> deserializer = this.supportedClasses.get(json.getString("stateClass"));
+        JSONObject worldStateJSON = new JSONObject(worldStateData);
+        String stateClass = worldStateJSON.getString("stateClass");
 
-        return deserializer.apply(data);
+        System.out.println("ABOUT TO START LOOPING THE PRIVATE DATA");
+
+        if (!this.supportedClasses.containsKey(stateClass)) {
+            throw new RuntimeException("Cannot get state for key " + key + ". State class is not in list of supported classes for state list.");
+        }
+
+        final Class<? extends T> clazz = this.supportedClasses.get(stateClass);
+    
+        for (String collection : this.collectionsMap.get(clazz.getName())) {
+            try {
+                final String privateData = new String(ctx.getStub().getPrivateData(collection, ledgerKey));
+
+                System.out.println("PRIVATE STATE DATA " + collection + ": " + worldStateData);
+
+                if (privateData.length() > 0) {
+                    JSONObject privateJSON = new JSONObject(privateData);
+
+                    for (String jsonKey : JSONObject.getNames(privateJSON)) {
+                        worldStateJSON.put(jsonKey, privateJSON.get(jsonKey));
+                    }
+                }
+            } catch (Exception e) {
+                // no problem they can't access the data
+            }
+        }
+
+        T returnVal;
+
+        try {
+            returnVal = this.deserialize(worldStateJSON);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot get state for key " + key + ". " + e.getLocalizedMessage());
+        }
+        return returnVal;
     }
 
     @SuppressWarnings("unchecked")
     public HistoricState<T>[] getHistory(String key) {
+        // No history for private data
         final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, State.splitKey(key)).toString();
         final QueryResultsIterator<KeyModification> keyHistory = this.ctx.getStub().getHistoryForKey(ledgerKey);
 
         ArrayList<HistoricState<T>> hsArrList = new ArrayList<HistoricState<T>>();
 
         for (KeyModification modification : keyHistory) {
-            final String data = modification.getStringValue();
+            final String worldStateData = modification.getStringValue();
 
-            JSONObject json = new JSONObject(data);
-            Function<String, T> deserializer = this.supportedClasses.get(json.getString("stateClass"));
+            JSONObject worldStateJSON = new JSONObject(worldStateData);
+            
+            T state;
+            try {
+                state = this.deserialize(worldStateJSON);
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Failed to get history for key " + key + ". " + e.getLocalizedMessage());
+            }
 
-            final T state = deserializer.apply(data);
             final Long ts = modification.getTimestamp().toEpochMilli();
             final String txId = modification.getTxId();
 
@@ -95,22 +152,52 @@ public abstract class StateList<T extends State> {
         query.getJSONObject("selector").put("_id", new JSONObject());
         query.getJSONObject("selector").getJSONObject("_id").put("$regex", ".*" +  this.name + ".*");
 
-        final QueryResultsIterator<KeyValue> values = this.ctx.getStub().getQueryResult(query.toString());
+        Map<String, JSONObject> valuesArrMap = new HashMap<String, JSONObject>();
 
-        ArrayList<T> valuesArrList = new ArrayList<T>();
+        java.util.function.Consumer<QueryResultsIterator<KeyValue>> iterate = (values) -> {
+            for (KeyValue value : values) {
+                final String data = value.getStringValue();
+    
+                JSONObject json = new JSONObject(data);
 
-        for (KeyValue value : values) {
-            final String data = value.getStringValue();
+                if (valuesArrMap.containsKey(value.getKey())) {
+                    final JSONObject existingJSON = valuesArrMap.get(value.getKey());
 
-            JSONObject json = new JSONObject(data);
-            Function<String, T> deserializer = this.supportedClasses.get(json.getString("stateClass"));
+                    for (String jsonKey : JSONObject.getNames(existingJSON)) {
+                        json.put(jsonKey, existingJSON.get(jsonKey));
+                    }
+                }
+    
+                valuesArrMap.put(value.getKey(), json);
+            }
+        };
 
-            final T state = deserializer.apply(data);
+        final QueryResultsIterator<KeyValue> worldStateValues = this.ctx.getStub().getQueryResult(query.toString());
+        iterate.accept(worldStateValues);
 
-            valuesArrList.add(state);
+        for (String collection : this.collections) {
+            try {
+                final QueryResultsIterator<KeyValue> privateValues = this.ctx.getStub().getPrivateDataQueryResult(collection, query.toString());
+                iterate.accept(privateValues);
+            } catch (Exception err) {
+                // can't use that store
+            }
         }
 
-        T[] valuesArr = valuesArrList.toArray((T[]) new Object[valuesArrList.size()]);
+        T[] valuesArr = (T[])  new Object[valuesArrMap.size()];
+
+        int counter = 0;
+        for (Map.Entry<String, JSONObject> result : valuesArrMap.entrySet()) {
+            T state;
+            try {
+                state = this.deserialize(result.getValue());
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Failed to run query. " + e.getLocalizedMessage());
+            }
+
+            valuesArr[counter] = state;
+            counter++;
+        }
 
         return valuesArr;
     }
@@ -144,22 +231,91 @@ public abstract class StateList<T extends State> {
 
         final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, state.getSplitKey()).toString();
 
-        final byte[] data = state.serialize();
+        final byte[] data = state.serialize().getBytes();
 
         this.ctx.getStub().putState(ledgerKey, data);
+
+        for (String collection : this.collectionsMap.get(state.getClass().getName())) {
+            final byte[] privateData = state.serialize(collection).getBytes();
+
+            try {
+                this.ctx.getStub().putPrivateData(collection, ledgerKey, privateData);
+            } catch (Exception err) {
+                // can't access that store
+            }
+        }
     }
 
     public void delete(String key) {
-        final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, State.splitKey(key)).toString();
+        if (this.exists(key)) {
+            final T state = this.get(key);
 
-        this.ctx.getStub().delState(ledgerKey);
+            final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, State.splitKey(key)).toString();
+
+            this.ctx.getStub().delState(ledgerKey);
+    
+            for (String collection : this.collectionsMap.get(state.getClass().getName())) {
+                try {
+                    this.ctx.getStub().delPrivateData(collection, ledgerKey);
+                } catch (Exception err) {
+                    // can't access that store
+                }
+            }
+        }
     }
 
-    protected void use(String stateClass, Function<String, T> deserializer) {
-        this.supportedClasses.put(stateClass, deserializer);
+    @SuppressWarnings("rawtypes")
+    private String[] getCollections(Class clazz) {
+        // don't want to do this everytime. make more efficient
+        final ArrayList<String> collections = new ArrayList<String>();
+
+        for (Field field : clazz.getDeclaredFields()) {
+            final Private annotation = field.getAnnotation(Private.class);
+            if (annotation != null) {
+                collections.addAll(Arrays.asList(annotation.collections()));
+            }
+        }
+
+        return Arrays.stream(collections.toArray(new String[collections.size()])).distinct().toArray(String[]::new);
     }
 
-    protected void use(Map<String, Function<String, T>> deserializers) {
-        this.supportedClasses.putAll(deserializers);
+    protected void use(Class<? extends T> stateClass) {
+        this.supportedClasses.put(stateClass.getName(), stateClass);
+        
+        String[] collections = this.getCollections(stateClass);
+        this.collectionsMap.put(stateClass.getName(), collections);
+
+        for (String collection : collections ) {
+            if (!this.collections.contains(collection)) {
+                this.collections.add(collection);
+            }
+        }
+    }
+
+    protected void use(Class<? extends T>[] stateClasses) {
+        for (Class<? extends T> stateClass : stateClasses) {
+            this.use(stateClass);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private T deserialize(JSONObject json) {
+        String stateClass = json.getString("stateClass");
+
+        final Class<? extends T> clazz = this.supportedClasses.get(stateClass);
+        Method deserialize;
+        try {
+            deserialize = clazz.getMethod("deserialize", String.class);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("State class missing deserialize function");
+        }
+
+        T state;
+        try {
+            state = (T) deserialize.invoke(null, json.toString());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to deserialize. " + e.getLocalizedMessage());
+        }
+        return state;
     }
 }

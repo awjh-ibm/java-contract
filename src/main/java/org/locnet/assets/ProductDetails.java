@@ -12,7 +12,7 @@ public class ProductDetails {
 
         String productType = jsonObject.getString("productType");
         int quantity = jsonObject.getInt("quantity");
-        int unitPrice = jsonObject.getInt("unitprice");
+        Double unitPrice = jsonObject.getDouble("unitprice");
 
         return new ProductDetails(productType, quantity, unitPrice);
     }
@@ -24,9 +24,9 @@ public class ProductDetails {
     private int quantity;
 
     @Property()
-    private int unitPrice;
+    private Double unitPrice;
 
-    public ProductDetails(String productType, int quantity, int unitPrice) {
+    public ProductDetails(String productType, int quantity, Double unitPrice) {
         this.productType = productType;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
@@ -40,7 +40,7 @@ public class ProductDetails {
         return this.quantity;
     }
 
-    public int getUnitPrice() {
+    public Double getUnitPrice() {
         return this.unitPrice;
     }
 }

@@ -9,10 +9,6 @@ public abstract class Participant extends State {
         return Constants.NETWORK_NAME + ".participants." + participantType;
     }
 
-    public static Participant deserialize(String json) {
-        throw new RuntimeException("Not yet implemented");
-    };
-
     @Property()
     private String id;
 

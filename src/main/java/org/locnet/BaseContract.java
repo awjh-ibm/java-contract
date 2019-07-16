@@ -1,5 +1,7 @@
 package org.locnet;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.logging.Logger;
 
 import org.hyperledger.fabric.contract.ContractInterface;
@@ -15,7 +17,11 @@ public class BaseContract implements ContractInterface {
         try {
             return new LetterOfCreditContext(stub);
         } catch (Exception err) {
-            Logger.getLogger("HELLO").warning("FAILED TO MAKE CONTEXT -> " + err.getStackTrace().toString());
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            err.printStackTrace(pw);
+            String sStackTrace = sw.toString(); // stack trace as a string
+            Logger.getLogger("HELLO").warning("FAILED TO MAKE CONTEXT -> " + sStackTrace);
             return null;
         }
     }

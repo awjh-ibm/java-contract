@@ -9,10 +9,6 @@ public abstract class Asset extends State {
         return Constants.NETWORK_NAME + ".assets."  + assetType;
     }
 
-    public static Asset deserialize(String json) {
-        throw new RuntimeException("Not yet implemented");
-    };
-
     @Property()
     private String id;
 

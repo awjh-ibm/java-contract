@@ -5,8 +5,11 @@ package org.locnet;
 
 import org.awjh.Organization;
 import org.awjh.Participant;
+import org.hyperledger.fabric.contract.annotation.Contact;
 import org.hyperledger.fabric.contract.annotation.Contract;
 import org.hyperledger.fabric.contract.annotation.Default;
+import org.hyperledger.fabric.contract.annotation.Info;
+import org.hyperledger.fabric.contract.annotation.License;
 import org.hyperledger.fabric.contract.annotation.Transaction;
 import org.locnet.assets.Approval;
 import org.locnet.assets.Evidence;
@@ -14,10 +17,6 @@ import org.locnet.assets.LetterOfCredit;
 import org.locnet.assets.ProductDetails;
 import org.locnet.enums.Status;
 import org.locnet.utils.LetterOfCreditContext;
-
-import io.swagger.v3.oas.annotations.info.Contact;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
 
 @Contract(name = "LettersOfCreditContract", 
     info = @Info(title = "Letters of Credit contract", 
@@ -42,6 +41,15 @@ public class LettersOfCreditContract extends BaseContract {
     }
 
     @Transaction()
+    public void makeLetter(LetterOfCreditContext ctx, String letterId) {
+        final Approval approval = new Approval(true, false, false, false);
+
+        final LetterOfCredit loc = new LetterOfCredit(letterId, "bob", "ross", "EastwoodBanking", "BankOfDinero", new String[0], new ProductDetails("computers", 100, 150.0), new Evidence[0], approval, Status.AWAITING_APPROVAL);
+    
+        ctx.getLetterOfCreditList().add(loc);
+    }
+
+    @Transaction()
     public void apply(LetterOfCreditContext ctx, String letterId, String applicantId, String beneficiaryId, String issuingBankId, String exportingBankId, String[] rules, ProductDetails productDetails) {
         final Approval approval = new Approval(true, false, false, false);
 
@@ -52,6 +60,7 @@ public class LettersOfCreditContract extends BaseContract {
 
     @Transaction()
     public LetterOfCredit read(LetterOfCreditContext ctx, String letterId) {
+        System.out.println("HELLO I AM ATTEMPTING TO READ");
         return (LetterOfCredit) ctx.getLetterOfCreditList().get(letterId);
     }
 }
