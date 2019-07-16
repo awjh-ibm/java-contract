@@ -57,10 +57,14 @@ public abstract class StateList<T extends State> {
 
             try {
                 this.ctx.getStub().putPrivateData(collection, key, privateData);
+                System.out.println("PUT PRIVATE DATA: " + collection + new String(privateData));
             } catch (Exception err) {
+                System.out.println("COULD NOT PUT IN STORE: " + collection);
                 // can't access that store
             }
         }
+
+        System.out.println("MANAGED TO MAKE SOMETHING");
     }
 
     public T get(String key) throws RuntimeException {
