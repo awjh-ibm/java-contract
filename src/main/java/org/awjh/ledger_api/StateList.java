@@ -1,5 +1,7 @@
 package org.awjh.ledger_api;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -76,17 +78,21 @@ public abstract class StateList<T extends State> {
 
         System.out.println("ABOUT TO START LOOPING THE PRIVATE DATA");
 
+        System.out.println("STATE CLASS => " + stateClass);
+        for (Map.Entry<String, String[]> entry: this.collectionsMap.entrySet()) {
+            System.out.println("LOOP STATE CLASS => " + entry.getKey());
+        }
         if (!this.supportedClasses.containsKey(stateClass)) {
             throw new RuntimeException("Cannot get state for key " + key + ". State class is not in list of supported classes for state list.");
         }
 
         final Class<? extends T> clazz = this.supportedClasses.get(stateClass);
-    
+        System.out.println("Number of collections => " + Integer.toString(this.collectionsMap.size()));
+
         for (String collection : this.collectionsMap.get(clazz.getName())) {
             try {
                 final String privateData = new String(ctx.getStub().getPrivateData(collection, ledgerKey));
-
-                System.out.println("PRIVATE STATE DATA " + collection + ": " + worldStateData);
+                System.out.println("PRIVATE STATE DATA " + collection + ": " + privateData);
 
                 if (privateData.length() > 0) {
                     JSONObject privateJSON = new JSONObject(privateData);
@@ -95,8 +101,14 @@ public abstract class StateList<T extends State> {
                         worldStateJSON.put(jsonKey, privateJSON.get(jsonKey));
                     }
                 }
-            } catch (Exception e) {
+            } catch (Exception err) {
                 // no problem they can't access the data
+                System.out.println("PRIVATE DATA STORE => " + collection);
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                err.printStackTrace(pw);
+                String sStackTrace = sw.toString(); // stack trace as a string
+                System.out.println(sStackTrace);
             }
         }
 
@@ -105,6 +117,11 @@ public abstract class StateList<T extends State> {
         try {
             returnVal = this.deserialize(worldStateJSON);
         } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            String sStackTrace = sw.toString(); // stack trace as a string
+            System.out.println(sStackTrace);
             throw new RuntimeException("Cannot get state for key " + key + ". " + e.getLocalizedMessage());
         }
         return returnVal;
@@ -122,7 +139,7 @@ public abstract class StateList<T extends State> {
             final String worldStateData = modification.getStringValue();
 
             JSONObject worldStateJSON = new JSONObject(worldStateData);
-            
+
             T state;
             try {
                 state = this.deserialize(worldStateJSON);
@@ -157,7 +174,7 @@ public abstract class StateList<T extends State> {
         java.util.function.Consumer<QueryResultsIterator<KeyValue>> iterate = (values) -> {
             for (KeyValue value : values) {
                 final String data = value.getStringValue();
-    
+
                 JSONObject json = new JSONObject(data);
 
                 if (valuesArrMap.containsKey(value.getKey())) {
@@ -167,7 +184,7 @@ public abstract class StateList<T extends State> {
                         json.put(jsonKey, existingJSON.get(jsonKey));
                     }
                 }
-    
+
                 valuesArrMap.put(value.getKey(), json);
             }
         };
@@ -253,7 +270,7 @@ public abstract class StateList<T extends State> {
             final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, State.splitKey(key)).toString();
 
             this.ctx.getStub().delState(ledgerKey);
-    
+
             for (String collection : this.collectionsMap.get(state.getClass().getName())) {
                 try {
                     this.ctx.getStub().delPrivateData(collection, ledgerKey);
@@ -281,7 +298,7 @@ public abstract class StateList<T extends State> {
 
     protected void use(Class<? extends T> stateClass) {
         this.supportedClasses.put(stateClass.getName(), stateClass);
-        
+
         String[] collections = this.getCollections(stateClass);
         this.collectionsMap.put(stateClass.getName(), collections);
 

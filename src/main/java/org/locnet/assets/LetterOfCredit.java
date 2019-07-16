@@ -74,7 +74,7 @@ public class LetterOfCredit extends Asset {
     private String beneficiaryId;
 
     @Property()
-    @Private(collections = { 
+    @Private(collections = {
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_BANK_OF_DINERO,
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_NICHOLSON,
         Constants.PRIVATE_COLLECTIONS.BANK_OF_DINERO_AND_NICHOLSON
@@ -82,7 +82,7 @@ public class LetterOfCredit extends Asset {
     private String issuingBankId;
 
     @Property()
-    @Private(collections = { 
+    @Private(collections = {
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_BANK_OF_DINERO,
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_NICHOLSON,
         Constants.PRIVATE_COLLECTIONS.BANK_OF_DINERO_AND_NICHOLSON
@@ -90,7 +90,7 @@ public class LetterOfCredit extends Asset {
     private String exportingBankId;
 
     @Property()
-    @Private(collections = { 
+    @Private(collections = {
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_BANK_OF_DINERO,
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_NICHOLSON,
         Constants.PRIVATE_COLLECTIONS.BANK_OF_DINERO_AND_NICHOLSON
@@ -98,7 +98,7 @@ public class LetterOfCredit extends Asset {
     private String[] rules;
 
     @Property()
-    @Private(collections = { 
+    @Private(collections = {
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_BANK_OF_DINERO,
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_NICHOLSON,
         Constants.PRIVATE_COLLECTIONS.BANK_OF_DINERO_AND_NICHOLSON
@@ -106,7 +106,7 @@ public class LetterOfCredit extends Asset {
     private ProductDetails productDetails;
 
     @Property()
-    @Private(collections = { 
+    @Private(collections = {
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_BANK_OF_DINERO,
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_NICHOLSON,
         Constants.PRIVATE_COLLECTIONS.BANK_OF_DINERO_AND_NICHOLSON
@@ -114,7 +114,7 @@ public class LetterOfCredit extends Asset {
     private Evidence[] evidence;
 
     @Property()
-    @Private(collections = { 
+    @Private(collections = {
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_BANK_OF_DINERO,
         Constants.PRIVATE_COLLECTIONS.EASTWOOD_BANKING_AND_NICHOLSON,
         Constants.PRIVATE_COLLECTIONS.BANK_OF_DINERO_AND_NICHOLSON
@@ -128,7 +128,7 @@ public class LetterOfCredit extends Asset {
     private Double value;
 
     public LetterOfCredit(String id, String applicantId, String beneficiaryId, String issuingBankId, String exportingBankId, String[] rules, ProductDetails productDetails, Evidence[] evidence, Approval approval, Status status) {
-        super(id, LetterOfCredit.class.getName());
+        super(id);
 
         this.applicantId = applicantId;
         this.beneficiaryId = beneficiaryId;
@@ -144,7 +144,7 @@ public class LetterOfCredit extends Asset {
 
     private LetterOfCredit(String id, String applicantId, Status status, Double value) {
         // When we aren't able to see the private data
-        super(id, LetterOfCredit.class.getName());
+        super(id);
 
         this.applicantId = applicantId;
         this.status = status;

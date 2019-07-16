@@ -1,6 +1,7 @@
 package org.awjh.ledger_api;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.json.JSONException;
@@ -20,18 +21,26 @@ public abstract class State {
         throw new RuntimeException("Not yet implemented");
     };
 
-    private String stateClass;
     private String key;
+    private String stateClass;
 
-    public State(String stateClass, String[] keyParts) {
-        this.stateClass = stateClass;
+    public State(String[] keyParts) {
         this.key = State.makeKey(keyParts);
+        this.stateClass = this.getClass().getName();
     }
 
     public String serialize() {
         JSONObject json = new JSONObject();
 
-        for (Field field : this.getClass().getDeclaredFields()) {
+        Class clazz = this.getClass();
+        ArrayList<Field> fields = new ArrayList<Field>();
+
+        do {
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+        } while ((clazz = clazz.getSuperclass()) != null);
+
+        for (Field field : fields) {
+            field.setAccessible(true);
             if (field.getAnnotation(Private.class) == null) {
                 try {
                     json.put(field.getName(), field.get(this));
@@ -52,6 +61,8 @@ public abstract class State {
         JSONObject json = new JSONObject();
 
         for (Field field : this.getClass().getDeclaredFields()) {
+            System.out.println("SERIALIZE FIELD NAME ==> " + field.getName());
+            field.setAccessible(true);
             final Private annotation = field.getAnnotation(Private.class);
             if (annotation != null && Arrays.asList(annotation.collections()).contains(collection)) {
                 try {
@@ -71,10 +82,6 @@ public abstract class State {
 
     public String getKey() {
         return this.key;
-    }
-
-    public String getStateClass() {
-        return this.stateClass;
     }
 
     public String[] getSplitKey() {
