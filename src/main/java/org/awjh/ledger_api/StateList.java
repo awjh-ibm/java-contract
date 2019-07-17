@@ -1,7 +1,5 @@
 package org.awjh.ledger_api;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -110,11 +108,7 @@ public abstract class StateList<T extends State> {
             } catch (Exception err) {
                 // no problem they can't access the data
                 System.out.println("PRIVATE DATA STORE => " + collection);
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                err.printStackTrace(pw);
-                String sStackTrace = sw.toString(); // stack trace as a string
-                System.out.println(sStackTrace);
+                Util.logStackTrace(err);
             }
         }
 
@@ -123,13 +117,9 @@ public abstract class StateList<T extends State> {
         try {
             System.out.println("ATTEMPTING TO DESERIALIZE => " + worldStateJSON.toString());
             returnVal = this.deserialize(worldStateJSON);
-        } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            String sStackTrace = sw.toString(); // stack trace as a string
-            System.out.println(sStackTrace);
-            throw new RuntimeException("Failed to deserialize" + key + ". " + e.getLocalizedMessage());
+        } catch (Exception err) {
+            Util.logStackTrace(err);
+            throw new RuntimeException("Failed to deserialize" + key + ". " + err.getMessage());
         }
         return returnVal;
     }
@@ -150,8 +140,9 @@ public abstract class StateList<T extends State> {
             T state;
             try {
                 state = this.deserialize(worldStateJSON);
-            } catch (RuntimeException e) {
-                throw new RuntimeException("Failed to get history for key " + key + ". " + e.getLocalizedMessage());
+            } catch (RuntimeException err) {
+                Util.logStackTrace(err);
+                throw new RuntimeException("Failed to get history for key " + key + ". " + err.getLocalizedMessage());
             }
 
             final Long ts = modification.getTimestamp().toEpochMilli();
@@ -215,8 +206,9 @@ public abstract class StateList<T extends State> {
             T state;
             try {
                 state = this.deserialize(result.getValue());
-            } catch (RuntimeException e) {
-                throw new RuntimeException("Failed to run query. " + e.getLocalizedMessage());
+            } catch (RuntimeException err) {
+                Util.logStackTrace(err);
+                throw new RuntimeException("Failed to run query. " + err.getMessage());
             }
 
             valuesArr[counter] = state;
@@ -331,7 +323,7 @@ public abstract class StateList<T extends State> {
         try {
             deserialize = clazz.getMethod("deserialize", String.class);
         } catch (NoSuchMethodException e) {
-            throw new RuntimeException("State class missing deserialize function");
+            throw new RuntimeException("State class missing deserialize function" + e.getMessage());
         }
 
         T state;
