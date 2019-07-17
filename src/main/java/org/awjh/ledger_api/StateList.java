@@ -119,6 +119,7 @@ public abstract class StateList<T extends State> {
         T returnVal;
 
         try {
+            System.out.println("ATTEMPTING TO DESERIALIZE => " + worldStateData);
             returnVal = this.deserialize(worldStateJSON);
         } catch (Exception e) {
             StringWriter sw = new StringWriter();
@@ -126,7 +127,7 @@ public abstract class StateList<T extends State> {
             e.printStackTrace(pw);
             String sStackTrace = sw.toString(); // stack trace as a string
             System.out.println(sStackTrace);
-            throw new RuntimeException("Cannot get state for key " + key + ". " + e.getLocalizedMessage());
+            throw new RuntimeException("Failed to deserialize" + key + ". " + e.getLocalizedMessage());
         }
         return returnVal;
     }
@@ -333,9 +334,10 @@ public abstract class StateList<T extends State> {
 
         T state;
         try {
+            System.out.println("Attempting to deserialize => " + json.toString());
             state = (T) deserialize.invoke(null, json.toString());
         } catch (Exception e) {
-            throw new RuntimeException("Failed to deserialize. " + e.getLocalizedMessage());
+            throw new RuntimeException("Failed to deserialize. " + e.getMessage());
         }
         return state;
     }

@@ -43,7 +43,13 @@ public abstract class State {
             field.setAccessible(true);
             if (field.getAnnotation(Private.class) == null) {
                 try {
-                    json.put(field.getName(), field.get(this));
+                    Object value = field.get(this);
+                    if (value instanceof State) {
+                        State stateValue = (State) value;
+                        json.put(field.getName(), stateValue.serialize());
+                    } else {
+                        json.put(field.getName(), value);
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 } catch (IllegalArgumentException e) {
@@ -66,7 +72,15 @@ public abstract class State {
             final Private annotation = field.getAnnotation(Private.class);
             if (annotation != null && Arrays.asList(annotation.collections()).contains(collection)) {
                 try {
-                    json.put(field.getName(), field.get(this));
+                    // json.put(field.getName(), field.get(this));
+                    Object value = field.get(this);
+                    System.out.println("SERIELIZED TYPE => " + value.getClass().getName());
+                    if (value instanceof State) {
+                        State stateValue = (State) value;
+                        json.put(field.getName(), stateValue.serialize());
+                    } else {
+                        json.put(field.getName(), value);
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 } catch (IllegalArgumentException e) {

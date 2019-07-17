@@ -1,20 +1,21 @@
 package org.locnet.assets;
 
+import org.awjh.ledger_api.State;
 import org.hyperledger.fabric.contract.annotation.DataType;
 import org.hyperledger.fabric.contract.annotation.Property;
 import org.json.JSONObject;
 
 @DataType()
-public class Approval {
+public class Approval extends State {
 
     public static Approval deserialize(String json) {
         JSONObject jsonObject = new JSONObject(json);
-        
+
         boolean applicant = jsonObject.getBoolean("applicant");
         boolean beneficiary = jsonObject.getBoolean("beneficiary");
         boolean issuingBank = jsonObject.getBoolean("issuingBank");
         boolean exportingBank = jsonObject.getBoolean("exportingBank");
-        
+
         return new Approval(applicant, beneficiary, issuingBank, exportingBank);
     }
 
@@ -31,6 +32,7 @@ public class Approval {
     private boolean exportingBank;
 
     public Approval(boolean applicant, boolean beneficiary, boolean issuingBank, boolean exportingBank) {
+        super(new String[]{""});
         this.applicant = applicant;
         this.beneficiary = beneficiary;
         this.issuingBank = issuingBank;
@@ -75,7 +77,7 @@ public class Approval {
         this.issuingBank = false;
         this.exportingBank = false;
     }
-    
+
     public boolean isFullyApproved() {
         return this.applicant && this.beneficiary && this.issuingBank && this.exportingBank;
     }

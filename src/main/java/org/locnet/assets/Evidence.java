@@ -1,11 +1,12 @@
 package org.locnet.assets;
 
+import org.awjh.ledger_api.State;
 import org.hyperledger.fabric.contract.annotation.DataType;
 import org.hyperledger.fabric.contract.annotation.Property;
 import org.json.JSONObject;
 
 @DataType()
-public class Evidence {
+public class Evidence extends State{
     public static Evidence deserialize(String json) {
         JSONObject jsonObject = new JSONObject(json);
 
@@ -22,6 +23,7 @@ public class Evidence {
     private String hash;
 
     public Evidence(String name, String hash) {
+        super(new String[]{""});
         this.name = name;
         this.hash = hash;
     }

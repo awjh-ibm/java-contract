@@ -1,11 +1,12 @@
 package org.locnet.assets;
 
+import org.awjh.ledger_api.State;
 import org.hyperledger.fabric.contract.annotation.DataType;
 import org.hyperledger.fabric.contract.annotation.Property;
 import org.json.JSONObject;
 
 @DataType()
-public class ProductDetails {
+public class ProductDetails extends State {
 
     public static ProductDetails deserialize(String json) {
         JSONObject jsonObject = new JSONObject(json);
@@ -27,6 +28,7 @@ public class ProductDetails {
     private Double unitPrice;
 
     public ProductDetails(String productType, int quantity, Double unitPrice) {
+        super(new String[]{""});
         this.productType = productType;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
