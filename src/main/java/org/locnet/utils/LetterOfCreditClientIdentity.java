@@ -24,12 +24,6 @@ public class LetterOfCreditClientIdentity extends ClientIdentity {
     public LetterOfCreditClientIdentity(LetterOfCreditContext ctx) throws InvalidProtocolBufferException, CertificateException, UnsupportedEncodingException {
         super(ctx.getStub());
 
-        System.out.println("Attributes");
-
-        for (Map.Entry<String, String> entry : this.attrs.entrySet()) {
-            System.out.println(entry.getKey() + "->" + entry.getValue());
-        }
-
         final String participantId = this.getAttributeValue(LetterOfCreditClientIdentity.ID_FIELD);
 
         if (ctx.getParticipantList().exists(participantId)) {

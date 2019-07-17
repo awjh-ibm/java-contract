@@ -48,8 +48,6 @@ public abstract class StateList<T extends State> {
 
         final byte[] worldStateData = state.serialize().getBytes();
 
-        System.out.println("PUT WORLD STATE DATA: " + new String(worldStateData));
-
         this.ctx.getStub().putState(key, worldStateData);
 
         for (String collection : this.collectionsMap.get(state.getClass().getName())) {
@@ -57,21 +55,15 @@ public abstract class StateList<T extends State> {
 
             try {
                 this.ctx.getStub().putPrivateData(collection, key, privateData);
-                System.out.println("PUT PRIVATE DATA: " + collection + new String(privateData));
             } catch (Exception err) {
-                System.out.println("COULD NOT PUT IN STORE: " + collection);
-                // can't access that store
+                Util.logStackTrace(err);
             }
         }
-
-        System.out.println("MANAGED TO MAKE SOMETHING");
     }
 
     public T get(String key) throws RuntimeException {
         final String ledgerKey = this.ctx.getStub().createCompositeKey(this.name, State.splitKey(key)).toString();
         final String worldStateData = new String(this.ctx.getStub().getState(ledgerKey));
-
-        System.out.println("WORLD STATE DATA: " + worldStateData);
 
         if (worldStateData.length() == 0) {
             throw new RuntimeException("Cannot get state. No state exists for key " + key);
@@ -79,24 +71,15 @@ public abstract class StateList<T extends State> {
 
         JSONObject worldStateJSON = new JSONObject(worldStateData);
         String stateClass = worldStateJSON.getString("stateClass");
-
-        System.out.println("ABOUT TO START LOOPING THE PRIVATE DATA");
-
-        System.out.println("STATE CLASS => " + stateClass);
-        for (Map.Entry<String, String[]> entry: this.collectionsMap.entrySet()) {
-            System.out.println("LOOP STATE CLASS => " + entry.getKey());
-        }
         if (!this.supportedClasses.containsKey(stateClass)) {
             throw new RuntimeException("Cannot get state for key " + key + ". State class is not in list of supported classes for state list.");
         }
 
         final Class<? extends T> clazz = this.supportedClasses.get(stateClass);
-        System.out.println("Number of collections => " + Integer.toString(this.collectionsMap.size()));
 
         for (String collection : this.collectionsMap.get(clazz.getName())) {
             try {
                 final String privateData = new String(ctx.getStub().getPrivateData(collection, ledgerKey));
-                System.out.println("PRIVATE STATE DATA " + collection + ": " + privateData);
 
                 if (privateData.length() > 0) {
                     JSONObject privateJSON = new JSONObject(privateData);
@@ -106,8 +89,6 @@ public abstract class StateList<T extends State> {
                     }
                 }
             } catch (Exception err) {
-                // no problem they can't access the data
-                System.out.println("PRIVATE DATA STORE => " + collection);
                 Util.logStackTrace(err);
             }
         }
@@ -115,7 +96,6 @@ public abstract class StateList<T extends State> {
         T returnVal;
 
         try {
-            System.out.println("ATTEMPTING TO DESERIALIZE => " + worldStateJSON.toString());
             returnVal = this.deserialize(worldStateJSON);
         } catch (Exception err) {
             Util.logStackTrace(err);
@@ -328,7 +308,6 @@ public abstract class StateList<T extends State> {
 
         T state;
         try {
-            System.out.println("Attempting to deserialize => " + json.toString());
             state = (T) deserialize.invoke(null, json.toString());
         } catch (Exception e) {
             throw new RuntimeException("Failed to deserialize. " + e.getMessage());

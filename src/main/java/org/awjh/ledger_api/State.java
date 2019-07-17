@@ -44,14 +44,11 @@ public abstract class State {
         } while ((clazz = clazz.getSuperclass()) != null);
 
         for (Field field : fields) {
-            System.out.println("SERIALIZE FIELD NAME ==> " + field.getName());
             field.setAccessible(true);
-            
+
             if (this.shouldAddToJSON(collection, field)) {
                 try {
-                    // json.put(field.getName(), field.get(this));
                     Object value = field.get(this);
-                    System.out.println("SERIELIZED TYPE => " + value.getClass().getName());
                     if (value instanceof State) {
                         State stateValue = (State) value;
                         json.put(field.getName(), new JSONObject(stateValue.serialize()));
