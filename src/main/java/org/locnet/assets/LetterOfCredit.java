@@ -15,13 +15,19 @@ import org.locnet.enums.Status;
 public class LetterOfCredit extends Asset {
 
     public static LetterOfCredit deserialize(String json) {
+        System.out.println("WE ARE DESERIALIZING A LETTER OF CREDIT!!");
+
         JSONObject jsonObject = new JSONObject(json);
+
+        System.out.println("PASSED MAKING JSON OBJECT");
 
         // PUBLIC FIELDS
         String id = jsonObject.getString("id");
         String applicantId = jsonObject.getString("applicantId");
-        Status status = Status.values()[jsonObject.getInt("Status")];
+        Status status = Status.valueOf(jsonObject.getString("status"));
         Double value = jsonObject.getDouble("value");
+
+        System.out.println("MANAGED TO HANDLE PUBLIC FIELDS");
 
         // CHECK IF HAS ALL PRIVATE FIELDS. THIS CLASS ONLY HAS ONE TYPE OF PRIVATE DATA MAY NEED DIFFERENT METHOD OF WORKING
         // OUT WHICH CONSTRUCTOR TO CALL ON MORE COMPLEX OBJECTS
@@ -40,13 +46,19 @@ public class LetterOfCredit extends Asset {
             String issuingBankId = jsonObject.getString("issuingBankId");
             String exportingBankId = jsonObject.getString("exportingBankId");
 
+            System.out.println("MANAGED TO HANDLE PARTICIPANT IDS");
+
             JSONArray rulesJSON = jsonObject.getJSONArray("rules");
             String[] rules = new String[rulesJSON.length()];
             for (int i = 0; i < rulesJSON.length(); i++) {
                 rules[i] = rulesJSON.getString(i);
             }
 
+            System.out.println("MANAGED TO HANDLE RULES");
+
             ProductDetails productDetails = ProductDetails.deserialize(jsonObject.getJSONObject("productDetails").toString());
+
+            System.out.println("MANAGED TO HANDLE PRODUCT DETAILS");
 
             JSONArray evidenceJSON = jsonObject.getJSONArray("evidence");
             Evidence[] evidence = new Evidence[evidenceJSON.length()];
@@ -54,7 +66,11 @@ public class LetterOfCredit extends Asset {
                 evidence[i] = Evidence.deserialize(evidenceJSON.getJSONObject(i).toString());
             }
 
+            System.out.println("MANAGED TO HANDLE EVIDENCE");
+
             Approval approval = Approval.deserialize(jsonObject.getJSONObject("productDetails").toString());
+
+            System.out.println("MANAGED TO HANDLE APPROVAL");
 
             return new LetterOfCredit(id, applicantId, beneficiaryId, issuingBankId, exportingBankId, rules, productDetails, evidence, approval, status);
         } else {

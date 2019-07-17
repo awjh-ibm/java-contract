@@ -310,6 +310,7 @@ public abstract class StateList<T extends State> {
         try {
             state = (T) deserialize.invoke(null, json.toString());
         } catch (Exception e) {
+            Util.logStackTrace(e);
             throw new RuntimeException("Failed to deserialize. " + e.getMessage());
         }
         return state;
