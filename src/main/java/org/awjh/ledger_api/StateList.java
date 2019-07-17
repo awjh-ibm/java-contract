@@ -50,6 +50,8 @@ public abstract class StateList<T extends State> {
 
         final byte[] worldStateData = state.serialize().getBytes();
 
+        System.out.println("PUT WORLD STATE DATA: " + new String(worldStateData));
+
         this.ctx.getStub().putState(key, worldStateData);
 
         for (String collection : this.collectionsMap.get(state.getClass().getName())) {
@@ -119,7 +121,7 @@ public abstract class StateList<T extends State> {
         T returnVal;
 
         try {
-            System.out.println("ATTEMPTING TO DESERIALIZE => " + worldStateData);
+            System.out.println("ATTEMPTING TO DESERIALIZE => " + worldStateJSON.toString());
             returnVal = this.deserialize(worldStateJSON);
         } catch (Exception e) {
             StringWriter sw = new StringWriter();

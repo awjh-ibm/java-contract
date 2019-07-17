@@ -30,6 +30,10 @@ public abstract class State {
     }
 
     public String serialize() {
+        return this.serialize(null);
+    }
+
+    public String serialize(String collection) {
         JSONObject json = new JSONObject();
 
         Class clazz = this.getClass();
@@ -40,44 +44,17 @@ public abstract class State {
         } while ((clazz = clazz.getSuperclass()) != null);
 
         for (Field field : fields) {
-            field.setAccessible(true);
-            if (field.getAnnotation(Private.class) == null) {
-                try {
-                    Object value = field.get(this);
-                    if (value instanceof State) {
-                        State stateValue = (State) value;
-                        json.put(field.getName(), stateValue.serialize());
-                    } else {
-                        json.put(field.getName(), value);
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return json.toString();
-    }
-
-    public String serialize(String collection) {
-        JSONObject json = new JSONObject();
-
-        for (Field field : this.getClass().getDeclaredFields()) {
             System.out.println("SERIALIZE FIELD NAME ==> " + field.getName());
             field.setAccessible(true);
-            final Private annotation = field.getAnnotation(Private.class);
-            if (annotation != null && Arrays.asList(annotation.collections()).contains(collection)) {
+            
+            if (this.shouldAddToJSON(collection, field)) {
                 try {
                     // json.put(field.getName(), field.get(this));
                     Object value = field.get(this);
                     System.out.println("SERIELIZED TYPE => " + value.getClass().getName());
                     if (value instanceof State) {
                         State stateValue = (State) value;
-                        json.put(field.getName(), stateValue.serialize());
+                        json.put(field.getName(), new JSONObject(stateValue.serialize()));
                     } else {
                         json.put(field.getName(), value);
                     }
@@ -100,5 +77,14 @@ public abstract class State {
 
     public String[] getSplitKey() {
         return State.splitKey(this.key);
+    }
+
+    private boolean shouldAddToJSON(String collection, Field field) {
+        if (collection == null) {
+            return field.getAnnotation(Private.class) == null;
+        }
+
+        final Private annotation = field.getAnnotation(Private.class);
+        return annotation != null && Arrays.asList(annotation.collections()).contains(collection);
     }
 }
